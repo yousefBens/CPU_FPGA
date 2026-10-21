@@ -1,6 +1,6 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-
+use IEEE.NUMERIC_STD.ALL;
 
 
 entity aluTb is
@@ -26,7 +26,7 @@ architecture DUT of aluTb is
     signal V         : std_logic := '0';
     
 begin
-    i_fastADC_ctrl : entity work.alu(rtl)
+    i_alu : entity work.alu(rtl)
         port map (
             Clk        => Clk,
             rst        => rst,
