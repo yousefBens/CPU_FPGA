@@ -3,111 +3,138 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity alu is
-  Port (
-    Clk    : in std_logic;
-    rst    : in std_logic;
+    port (
+        A      : in  std_logic_vector(7 downto 0);
+        B      : in  std_logic_vector(7 downto 0);
+        ALU_OP : in  std_logic_vector(2 downto 0);
 
-    A      : in std_logic_vector(7 downto 0);
-    B      : in std_logic_vector(7 downto 0);
-    ALU_OP : in std_logic_vector(2 downto 0);
+        RESULT : out std_logic_vector(7 downto 0);
 
-    RESULT : out std_logic_vector(7 downto 0);
-    Z      : out std_logic;
-    C      : out std_logic;
-    N      : out std_logic;
-    V      : out std_logic
-  );
+        Z      : out std_logic;
+        C      : out std_logic;
+        N      : out std_logic;
+        V      : out std_logic
+    );
 end alu;
 
 architecture rtl of alu is
 
-    signal RESULT_reg : std_logic_vector(7 downto 0) := (others => '0');
-
 begin
 
-    RESULT <= RESULT_reg;
+    process(A, B, ALU_OP)
 
-    process(Clk)
         variable temp_result : std_logic_vector(7 downto 0);
         variable temp_add    : unsigned(8 downto 0);
+
+        variable temp_c : std_logic;
+        variable temp_v : std_logic;
+
     begin
-        if rising_edge(Clk) then
-            if rst = '1' then
-                RESULT_reg <= (others => '0');
-                Z <= '0';
-                C <= '0';
-                N <= '0';
-                V <= '0';
 
-            else
-                
-                C <= '0';
-                V <= '0';
+        temp_result := (others => '0');
+        temp_add    := (others => '0');
 
-                case ALU_OP is
+        temp_c := '0';
+        temp_v := '0';
 
-                    when "000" => -- ADD
-                        temp_add := ('0' & unsigned(A)) + ('0' & unsigned(B));
-                        temp_result := std_logic_vector(temp_add(7 downto 0));
-                        RESULT_reg <= temp_result;
+        case ALU_OP is
 
-                        C <= temp_add(8);
-                        V <= (not (A(7) xor B(7))) and
-                             (A(7) xor temp_result(7));
+            --------------------------------------------------
+            -- ADD
+            --------------------------------------------------
+            when "000" =>
 
-                    when "001" => -- SUB
-                        temp_result := std_logic_vector(unsigned(A) - unsigned(B));
-                        RESULT_reg <= temp_result;
+                temp_add :=
+                    ('0' & unsigned(A)) +
+                    ('0' & unsigned(B));
 
-                        if unsigned(A) < unsigned(B) then
-                            C <= '1';
-                        end if;
+                temp_result := std_logic_vector(temp_add(7 downto 0));
 
-                        V <= (A(7) xor B(7)) and
-                             (A(7) xor temp_result(7));
+                temp_c := temp_add(8);
 
-                    when "010" => -- AND
-                        temp_result := A and B;
-                        RESULT_reg <= temp_result;
+                temp_v := (not (A(7) xor B(7))) and
+                          (A(7) xor temp_result(7));
 
-                    when "011" => -- OR
-                        temp_result := A or B;
-                        RESULT_reg <= temp_result;
+            --------------------------------------------------
+            -- SUB
+            --------------------------------------------------
+            when "001" =>
 
-                    when "100" => -- XOR
-                        temp_result := A xor B;
-                        RESULT_reg <= temp_result;
+                temp_result :=
+                    std_logic_vector(unsigned(A) - unsigned(B));
 
-                    when "101" => -- NOT A
-                        temp_result := not A;
-                        RESULT_reg <= temp_result;
-
-                    when "110" => -- SHIFT LEFT A
-                        temp_result := A(6 downto 0) & '0';
-                        RESULT_reg <= temp_result;
-
-                    when "111" => -- SHIFT RIGHT A
-                        temp_result := '0' & A(7 downto 1);
-                        RESULT_reg <= temp_result;
-
-                    when others =>
-                        temp_result := (others => '0');
-                        RESULT_reg <= temp_result;
-
-                end case;
-
-                -- Zero Flag
-                if temp_result = x"00" then
-                    Z <= '1';
-                else
-                    Z <= '0';
+                if unsigned(A) < unsigned(B) then
+                    temp_c := '1';
                 end if;
 
-                -- Negative Flag
-                N <= temp_result(7);
+                temp_v := (A(7) xor B(7)) and
+                          (A(7) xor temp_result(7));
 
-            end if;
+            --------------------------------------------------
+            -- AND
+            --------------------------------------------------
+            when "010" =>
+
+                temp_result := A and B;
+
+            --------------------------------------------------
+            -- OR
+            --------------------------------------------------
+            when "011" =>
+
+                temp_result := A or B;
+
+            --------------------------------------------------
+            -- XOR
+            --------------------------------------------------
+            when "100" =>
+
+                temp_result := A xor B;
+
+            --------------------------------------------------
+            -- NOT A
+            --------------------------------------------------
+            when "101" =>
+
+                temp_result := not A;
+
+            --------------------------------------------------
+            -- SHIFT LEFT
+            --------------------------------------------------
+            when "110" =>
+
+                temp_result := A(6 downto 0) & '0';
+
+            --------------------------------------------------
+            -- SHIFT RIGHT
+            --------------------------------------------------
+            when "111" =>
+
+                temp_result := '0' & A(7 downto 1);
+
+            when others =>
+
+                temp_result := (others => '0');
+
+        end case;
+
+        --------------------------------------------------
+        -- Outputs
+        --------------------------------------------------
+
+        RESULT <= temp_result;
+
+        C <= temp_c;
+        V <= temp_v;
+
+        if temp_result = x"00" then
+            Z <= '1';
+        else
+            Z <= '0';
         end if;
+
+        N <= temp_result(7);
+
     end process;
 
 end rtl;

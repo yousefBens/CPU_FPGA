@@ -9,12 +9,6 @@ end aluTb;
 
 architecture DUT of aluTb is
 
-    constant Clock_Freq     : integer  := 100_000_000;
-    constant ClockPeriod    : time     := 1 sec / Clock_Freq;
-    
-    signal Clk        : std_logic := '0';
-    signal rst        : std_logic := '1';
-    
     signal A   : std_logic_vector(7 downto 0);
     signal B   : std_logic_vector(7 downto 0);
     signal ALU_OP   : std_logic_vector(2 downto 0);
@@ -28,9 +22,6 @@ architecture DUT of aluTb is
 begin
     i_alu : entity work.alu(rtl)
         port map (
-            Clk        => Clk,
-            rst        => rst,
-
             A          => A,
             B          => B,
             ALU_OP     => ALU_OP,
@@ -42,7 +33,7 @@ begin
             V          => V
         );
     
-    Clk <= not Clk after ClockPeriod / 2;
+
     
     process
     begin
@@ -53,7 +44,7 @@ begin
         ALU_OP <= "000";
 
         wait for 20 ns;
-        rst <= '0';
+
 
         -- ADD : 5 + 3 = 8
         A <= x"05";
