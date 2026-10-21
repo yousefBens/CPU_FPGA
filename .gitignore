@@ -1,0 +1,47 @@
+# ============================================================
+# Vivado - Generated / temporary files
+# ============================================================
+
+*.jou
+*.log
+*.str
+*.zip
+*.backup.jou
+*.backup.log
+
+# Generated directories
+*.cache/
+*.runs/
+*.sim/
+*.ip_user_files/
+*.hw/
+*.gen/
+
+# ============================================================
+# Vivado - Keep project and source files
+# ============================================================
+
+# Keep:
+# *.xpr       Vivado project
+# *.srcs/     VHDL, Verilog, XDC, Block Design
+# *.vhd       VHDL sources
+# *.v         Verilog sources
+# *.xdc       Constraints
+# *.tcl       TCL scripts
+
+# ============================================================
+# Temporary / editor files
+# ============================================================
+
+*~
+*.tmp
+*.bak
+.DS_Store
+
+# ============================================================
+# Vitis / Software generated files
+# ============================================================
+
+Soft/.metadata/
+Soft/**/Debug/
+Soft/**/Release/
