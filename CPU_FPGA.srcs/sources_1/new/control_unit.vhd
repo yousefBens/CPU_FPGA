@@ -48,7 +48,8 @@ architecture rtl of control_unit is
         DECODE,
         EXECUTE,
         MEMORY,
-        WRITEBACK
+        WRITEBACK,
+        ST_HALTED
     );
 
     signal state      : state_type := FETCH_ROM;
@@ -153,7 +154,10 @@ begin
                             end if;
                 
                             next_state <= FETCH_ROM;
-                
+
+                        when "1111" =>  -- HALT
+                            next_state <= ST_HALTED;
+                            
                         -- Instruction inconnue
                         when others =>
                             pc_enable <= '1';
@@ -203,6 +207,12 @@ begin
                     end case;
                 
                     next_state <= FETCH_ROM;
+                    
+                when ST_HALTED =>
+                
+                    halted <= '1';
+                
+                    next_state <= ST_HALTED;
         
             end case;
         else

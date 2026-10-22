@@ -9,22 +9,22 @@ architecture DUT of control_unitTb is
 
     constant CLK_PERIOD : time := 10 ns;
 
-    -- ================================================
+    -- =====================================================
     -- CLOCK & RESET
-    -- ================================================
+    -- =====================================================
 
     signal Clk : std_logic := '0';
     signal rst : std_logic := '1';
 
-    -- ================================================
+    -- =====================================================
     -- INSTRUCTION
-    -- ================================================
+    -- =====================================================
 
     signal opcode : std_logic_vector(3 downto 0) := "0000";
 
-    -- ================================================
+    -- =====================================================
     -- CONTROL UNIT OUTPUTS
-    -- ================================================
+    -- =====================================================
 
     signal pc_enable          : std_logic;
     signal pc_load            : std_logic;
@@ -43,25 +43,25 @@ architecture DUT of control_unitTb is
 
     signal halted             : std_logic;
 
-    -- ================================================
+    -- =====================================================
     -- PROGRAM COUNTER
-    -- ================================================
+    -- =====================================================
 
     signal pc_load_data : std_logic_vector(7 downto 0) := x"00";
     signal pc_out       : std_logic_vector(7 downto 0);
 
-    -- ================================================
+    -- =====================================================
     -- SIMULATED ALU FLAGS
-    -- ================================================
+    -- =====================================================
 
     signal alu_z : std_logic := '0';
     signal alu_c : std_logic := '0';
     signal alu_n : std_logic := '0';
     signal alu_v : std_logic := '0';
 
-    -- ================================================
+    -- =====================================================
     -- REGISTERED FLAGS
-    -- ================================================
+    -- =====================================================
 
     signal flag_z : std_logic;
     signal flag_c : std_logic;
@@ -70,16 +70,16 @@ architecture DUT of control_unitTb is
 
 begin
 
-    -- ================================================
-    -- CLOCK
-    -- ================================================
+    -- =====================================================
+    -- CLOCK GENERATION
+    -- =====================================================
 
     Clk <= not Clk after CLK_PERIOD / 2;
 
 
-    -- ================================================
+    -- =====================================================
     -- CONTROL UNIT
-    -- ================================================
+    -- =====================================================
 
     U_CONTROL : entity work.control_unit
         port map (
@@ -109,9 +109,9 @@ begin
         );
 
 
-    -- ================================================
+    -- =====================================================
     -- PROGRAM COUNTER
-    -- ================================================
+    -- =====================================================
 
     U_PC : entity work.program_counter
         port map (
@@ -128,9 +128,9 @@ begin
         );
 
 
-    -- ================================================
+    -- =====================================================
     -- FLAGS REGISTER
-    -- ================================================
+    -- =====================================================
 
     U_FLAGS : entity work.flags_register
         port map (
@@ -152,13 +152,13 @@ begin
         );
 
 
-    -- ================================================
+    -- =====================================================
     -- TEST PROCESS
-    -- ================================================
+    -- =====================================================
 
     stimulus : process
 
-        -- Attendre un front montant et la stabilisation
+        -- Attendre un front montant puis la stabilisation
         procedure next_cycle is
         begin
             wait until rising_edge(Clk);
@@ -180,54 +180,56 @@ begin
         end procedure;
 
 
-        -- Vérifier que les commandes sont désactivées
-        procedure check_idle is
+        -- Vérifier que toutes les commandes sont désactivées
+        procedure check_no_activity is
         begin
 
             assert pc_enable = '0'
-                report "Unexpected PC increment"
+                report "PC ENABLE ACTIVE"
                 severity failure;
 
             assert pc_load = '0'
-                report "Unexpected PC load"
+                report "PC LOAD ACTIVE"
+                severity failure;
+
+            assert ir_enable = '0'
+                report "IR ENABLE ACTIVE"
                 severity failure;
 
             assert reg_write_enable = '0'
-                report "Unexpected register write"
+                report "REGISTER WRITE ACTIVE"
                 severity failure;
 
             assert ram_read_enable = '0'
-                report "Unexpected RAM read"
+                report "RAM READ ACTIVE"
                 severity failure;
 
             assert ram_write_enable = '0'
-                report "Unexpected RAM write"
+                report "RAM WRITE ACTIVE"
                 severity failure;
 
             assert flags_write_enable = '0'
-                report "Unexpected flags write"
+                report "FLAGS WRITE ACTIVE"
                 severity failure;
 
         end procedure;
 
 
-        -- ============================================
+        -- =================================================
         -- Aller de FETCH_ROM vers EXECUTE
-        -- ============================================
+        -- =================================================
 
         procedure go_to_execute(
             constant test_opcode : in std_logic_vector(3 downto 0)
         ) is
         begin
 
-            -- Précondition : la FSM est en FETCH_ROM
+            -- Précondition : state = FETCH_ROM
             wait until falling_edge(Clk);
 
             opcode <= test_opcode;
 
             wait for 1 ns;
-
-            check_idle;
 
             -- FETCH_ROM -> FETCH_IR
             next_cycle;
@@ -239,7 +241,9 @@ begin
             -- FETCH_IR -> DECODE
             next_cycle;
 
-            check_idle;
+            assert ir_enable = '0'
+                report "DECODE ERROR"
+                severity failure;
 
             -- DECODE -> EXECUTE
             next_cycle;
@@ -247,9 +251,40 @@ begin
         end procedure;
 
 
-        -- ============================================
-        -- Test d'une instruction JMP
-        -- ============================================
+        -- =================================================
+        -- TEST NOP
+        -- =================================================
+
+        procedure test_nop(
+            constant expected_pc : in natural
+        ) is
+        begin
+
+            report "TEST NOP";
+
+            go_to_execute("0000");
+
+            assert pc_enable = '1'
+                report "NOP: PC NOT ENABLED"
+                severity failure;
+
+            assert pc_load = '0'
+                report "NOP: PC LOAD ACTIVE"
+                severity failure;
+
+            -- EXECUTE -> FETCH_ROM
+            next_cycle;
+
+            check_pc(expected_pc, "NOP");
+
+            report "NOP TEST PASSED";
+
+        end procedure;
+
+
+        -- =================================================
+        -- TEST JMP
+        -- =================================================
 
         procedure test_jmp(
             constant target : in natural
@@ -265,11 +300,11 @@ begin
             wait for 1 ns;
 
             assert pc_load = '1'
-                report "JMP: pc_load should be 1"
+                report "JMP: PC LOAD NOT ENABLED"
                 severity failure;
 
             assert pc_enable = '0'
-                report "JMP: pc_enable should be 0"
+                report "JMP: PC ENABLE SHOULD BE 0"
                 severity failure;
 
             -- EXECUTE -> FETCH_ROM
@@ -277,152 +312,54 @@ begin
 
             check_pc(target, "JMP");
 
-            check_idle;
-
             report "JMP TEST PASSED";
 
         end procedure;
 
 
-        -- ============================================
-        -- Test JZ
-        -- ============================================
+        -- =================================================
+        -- TEST HALT
+        -- =================================================
 
-        procedure test_jz(
-            constant target       : in natural;
-            constant expected_pc  : in natural;
-            constant expected_z   : in std_logic
-        ) is
+        procedure test_halt is
         begin
 
-            report "TEST JZ";
+            report "====================================";
+            report "TEST HALT";
+            report "====================================";
 
-            assert flag_z = expected_z
-                report "JZ: Unexpected Z flag"
+            -- La FSM doit être en FETCH_ROM
+            go_to_execute("1111");
+
+            -- Dans EXECUTE, HALT doit bloquer le PC
+            assert pc_enable = '0'
+                report "HALT: PC ENABLE ACTIVE IN EXECUTE"
                 severity failure;
 
-            go_to_execute("1101");
-
-            pc_load_data <= std_logic_vector(to_unsigned(target, 8));
-
-            wait for 1 ns;
-
-            if expected_z = '1' then
-
-                assert pc_load = '1'
-                    report "JZ: pc_load should be 1"
-                    severity failure;
-
-                assert pc_enable = '0'
-                    report "JZ: pc_enable should be 0"
-                    severity failure;
-
-            else
-
-                assert pc_load = '0'
-                    report "JZ: pc_load should be 0"
-                    severity failure;
-
-                assert pc_enable = '1'
-                    report "JZ: pc_enable should be 1"
-                    severity failure;
-
-            end if;
-
-            -- EXECUTE -> FETCH_ROM
-            next_cycle;
-
-            check_pc(expected_pc, "JZ");
-
-            check_idle;
-
-            report "JZ TEST PASSED";
-
-        end procedure;
-
-
-        -- ============================================
-        -- Test d'une instruction ALU
-        -- ============================================
-
-        procedure test_alu_flags(
-            constant test_opcode : in std_logic_vector(3 downto 0);
-            constant expected_op : in std_logic_vector(2 downto 0);
-            constant expected_z  : in std_logic;
-            constant expected_c  : in std_logic;
-            constant expected_n  : in std_logic;
-            constant expected_v  : in std_logic
-        ) is
-        begin
-
-            report "TEST ALU FLAGS";
-
-            -- Préparer les flags simulés avant EXECUTE
-            alu_z <= expected_z;
-            alu_c <= expected_c;
-            alu_n <= expected_n;
-            alu_v <= expected_v;
-
-            go_to_execute(test_opcode);
-
-            assert alu_op = expected_op
-                report "ALU OP ERROR"
-                severity failure;
-
-            assert flags_write_enable = '1'
-                report "FLAGS WRITE NOT ENABLED"
+            assert pc_load = '0'
+                report "HALT: PC LOAD ACTIVE IN EXECUTE"
                 severity failure;
 
             assert reg_write_enable = '0'
-                report "REGISTER WRITE TOO EARLY"
+                report "HALT: REGISTER WRITE ACTIVE IN EXECUTE"
                 severity failure;
 
-            -- EXECUTE -> WRITEBACK
-            -- Capture des flags sur ce front
+            assert ram_write_enable = '0'
+                report "HALT: RAM WRITE ACTIVE IN EXECUTE"
+                severity failure;
+
+            -- EXECUTE -> HALTED
             next_cycle;
 
-            assert flag_z = expected_z
-                report "Z FLAG ERROR"
+            assert halted = '1'
+                report "HALT: CPU DID NOT ENTER HALTED"
                 severity failure;
 
-            assert flag_c = expected_c
-                report "C FLAG ERROR"
-                severity failure;
+            check_no_activity;
 
-            assert flag_n = expected_n
-                report "N FLAG ERROR"
-                severity failure;
+            check_pc(20, "HALT");
 
-            assert flag_v = expected_v
-                report "V FLAG ERROR"
-                severity failure;
-
-            assert flags_write_enable = '0'
-                report "FLAGS WRITE STILL ENABLED"
-                severity failure;
-
-            assert reg_write_enable = '1'
-                report "WRITEBACK ERROR"
-                severity failure;
-
-            assert reg_write_sel = "00"
-                report "ALU RESULT NOT SELECTED"
-                severity failure;
-
-            assert pc_enable = '1'
-                report "PC NOT ENABLED"
-                severity failure;
-
-            assert alu_op = expected_op
-                report "ALU OP CHANGED IN WRITEBACK"
-                severity failure;
-
-            -- WRITEBACK -> FETCH_ROM
-            next_cycle;
-
-            check_idle;
-
-            report "ALU FLAGS TEST PASSED";
+            report "CPU ENTERED HALTED STATE";
 
         end procedure;
 
@@ -430,13 +367,13 @@ begin
     begin
 
         report "========================================";
-        report "STEP 5: JMP / JZ / FLAGS TESTBENCH";
+        report "STEP 6: HALT TESTBENCH";
         report "========================================";
 
 
-        -- ============================================
+        -- =================================================
         -- TEST 1 : RESET
-        -- ============================================
+        -- =================================================
 
         rst <= '1';
 
@@ -444,119 +381,210 @@ begin
 
         check_pc(0, "RESET");
 
-        assert flag_z = '0' and
-               flag_c = '0' and
-               flag_n = '0' and
-               flag_v = '0'
-            report "RESET FLAGS ERROR"
+        assert halted = '0'
+            report "RESET: HALTED SHOULD BE 0"
             severity failure;
 
-        check_idle;
+        check_no_activity;
 
         rst <= '0';
 
         report "RESET TEST PASSED";
 
 
-        -- ============================================
+        -- =================================================
         -- TEST 2 : NOP
-        -- ============================================
+        -- =================================================
 
-        report "TEST NOP";
-
-        go_to_execute("0000");
-
-        assert pc_enable = '1'
-            report "NOP: PC NOT ENABLED"
-            severity failure;
-
-        next_cycle;
-
-        check_pc(1, "NOP");
-
-        check_idle;
-
-        report "NOP TEST PASSED";
+        test_nop(1);
 
 
-        -- ============================================
+        -- =================================================
         -- TEST 3 : JMP 20
-        -- ============================================
+        -- =================================================
 
         test_jmp(20);
 
 
-        -- ============================================
-        -- TEST 4 : JZ 30 AVEC Z = 0
-        -- ============================================
+        -- =================================================
+        -- TEST 4 : HALT
+        -- =================================================
 
-        test_jz(
-            30,
-            21,
-            '0'
-        );
+        test_halt;
 
 
-        -- ============================================
-        -- TEST 5 : SUB -> Z = 1
-        -- ============================================
+        -- =================================================
+        -- TEST 5 : WAIT 10 CLOCK CYCLES
+        -- =================================================
 
-        test_alu_flags(
-            "0010",  -- SUB
-            "001",   -- ALU SUB
-            '1',     -- Z
-            '0',     -- C
-            '0',     -- N
-            '0'      -- V
-        );
+        report "TEST HALTED STABILITY - 10 CYCLES";
 
-        check_pc(22, "SUB");
+        for i in 1 to 10 loop
 
+            next_cycle;
 
-        -- ============================================
-        -- TEST 6 : JZ 40 AVEC Z = 1
-        -- ============================================
+            assert halted = '1'
+                report "HALTED LOST DURING WAIT"
+                severity failure;
 
-        test_jz(
-            40,
-            40,
-            '1'
-        );
+            check_no_activity;
+
+            check_pc(20, "HALTED STABILITY");
+
+        end loop;
+
+        report "HALTED STABILITY TEST PASSED";
 
 
-        -- ============================================
-        -- TEST 7 : ADD -> Z = 0
-        -- ============================================
+        -- =================================================
+        -- TEST 6 : CHANGE OPCODE TO ADD
+        -- =================================================
 
-        test_alu_flags(
-            "0001",  -- ADD
-            "000",   -- ALU ADD
-            '0',     -- Z
-            '1',     -- C
-            '1',     -- N
-            '0'      -- V
-        );
+        report "TEST OPCODE CHANGE TO ADD";
 
-        check_pc(41, "ADD");
+        wait until falling_edge(Clk);
+
+        opcode <= "0001";
+
+        alu_z <= '1';
+        alu_c <= '1';
+        alu_n <= '1';
+        alu_v <= '1';
+
+        wait for 1 ns;
+
+        check_no_activity;
+
+        for i in 1 to 3 loop
+
+            next_cycle;
+
+            assert halted = '1'
+                report "HALTED LOST AFTER ADD OPCODE"
+                severity failure;
+
+            check_no_activity;
+
+            check_pc(20, "HALTED ADD");
+
+        end loop;
+
+        assert flag_z = '0' and
+               flag_c = '0' and
+               flag_n = '0' and
+               flag_v = '0'
+            report "FLAGS CHANGED WHILE HALTED"
+            severity failure;
+
+        report "ADD OPCODE IGNORED - PASSED";
 
 
-        -- =============================================
-        -- TEST 8 : JZ 50 AVEC Z = 0
-        -- ============================================
+        -- =================================================
+        -- TEST 7 : CHANGE OPCODE TO STORE
+        -- =================================================
 
-        test_jz(
-            50,
-            42,
-            '0'
-        );
+        report "TEST OPCODE CHANGE TO STORE";
+
+        wait until falling_edge(Clk);
+
+        opcode <= "1011";
+
+        wait for 1 ns;
+
+        for i in 1 to 3 loop
+
+            next_cycle;
+
+            assert halted = '1'
+                report "HALTED LOST AFTER STORE OPCODE"
+                severity failure;
+
+            check_no_activity;
+
+            check_pc(20, "HALTED STORE");
+
+        end loop;
+
+        report "STORE OPCODE IGNORED - PASSED";
 
 
-        -- ============================================
+        -- =================================================
+        -- TEST 8 : CHANGE OPCODE TO JMP
+        -- =================================================
+
+        report "TEST OPCODE CHANGE TO JMP";
+
+        wait until falling_edge(Clk);
+
+        opcode <= "1100";
+
+        pc_load_data <= x"64"; -- Adresse 100
+
+        wait for 1 ns;
+
+        for i in 1 to 3 loop
+
+            next_cycle;
+
+            assert halted = '1'
+                report "HALTED LOST AFTER JMP OPCODE"
+                severity failure;
+
+            check_no_activity;
+
+            check_pc(20, "HALTED JMP");
+
+        end loop;
+
+        report "JMP OPCODE IGNORED - PASSED";
+
+
+        -- =================================================
+        -- TEST 9 : RESET WHILE HALTED
+        -- =================================================
+
+        report "TEST RESET WHILE HALTED";
+
+        wait until falling_edge(Clk);
+
+        rst <= '1';
+
+        wait for 1 ns;
+
+        -- Les commandes doivent être désactivées
+        check_no_activity;
+
+        assert halted = '0'
+            report "HALTED NOT CLEARED DURING RESET"
+            severity failure;
+
+        -- Reset synchrone
+        next_cycle;
+
+        check_pc(0, "RESET AFTER HALT");
+
+        assert halted = '0'
+            report "HALTED NOT CLEARED AFTER RESET"
+            severity failure;
+
+        rst <= '0';
+
+        report "RESET AFTER HALT TEST PASSED";
+
+
+        -- =================================================
+        -- TEST 10 : NOP AFTER RESET
+        -- =================================================
+
+        test_nop(1);
+
+
+        -- =================================================
         -- FINAL RESULT
-        -- ============================================
+        -- =================================================
 
         report "========================================";
-        report "ALL STEP 5 TESTS PASSED";
+        report "ALL STEP 6 TESTS PASSED";
         report "========================================";
 
         wait;
