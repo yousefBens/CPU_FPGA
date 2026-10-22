@@ -69,7 +69,7 @@ begin
     end process;
 
 
-    process(state, opcode, flag_z)
+    process(state, opcode, flag_z, rst)
     begin
     
         next_state         <= state;
@@ -83,143 +83,134 @@ begin
     
         ram_read_enable    <= '0';
         ram_write_enable   <= '0';
-    
+        
+        alu_op             <= "000";
         flags_write_enable <= '0';
         halted             <= '0';
         
-        case opcode is
+        if rst = '0' then
+            case opcode is
+            
+                when "0001" => alu_op <= "000"; -- ADD
+                when "0010" => alu_op <= "001"; -- SUB
+                when "0011" => alu_op <= "010"; -- AND
+                when "0100" => alu_op <= "011"; -- OR
+                when "0101" => alu_op <= "100"; -- XOR
+                when "0110" => alu_op <= "101"; -- NOT
+                when "0111" => alu_op <= "110"; -- SHL
+                when "1000" => alu_op <= "111"; -- SHR
+                when others => alu_op <= "000";
+            
+            end case;
+            
+            case state is
         
-            when "0001" => alu_op <= "000"; -- ADD
-            when "0010" => alu_op <= "001"; -- SUB
-            when "0011" => alu_op <= "010"; -- AND
-            when "0100" => alu_op <= "011"; -- OR
-            when "0101" => alu_op <= "100"; -- XOR
-            when "0110" => alu_op <= "101"; -- NOT
-            when "0111" => alu_op <= "110"; -- SHL
-            when "1000" => alu_op <= "111"; -- SHR
-            when others => alu_op <= "000";
+                when FETCH_ROM =>
+                    next_state <= FETCH_IR;
         
-        end case;
+                when FETCH_IR =>
+                    ir_enable <= '1';
+                    next_state <= DECODE;
         
-        case state is
-    
-            when FETCH_ROM =>
-                next_state <= FETCH_IR;
-    
-            when FETCH_IR =>
-                ir_enable <= '1';
-                next_state <= DECODE;
-    
-            when DECODE =>
-                next_state <= EXECUTE;
-    
-            when EXECUTE =>
-    
-                case opcode is
-            
-                    when "0000" =>       -- NOP
-                        pc_enable <= '1';
-                        next_state <= FETCH_ROM;
-            
-                    when "0001" =>       -- ADD
-                        alu_op <= "000";
-                        next_state <= WRITEBACK;
-            
-                    when "0010" =>       -- SUB
-                        alu_op <= "001";
-                        next_state <= WRITEBACK;
-            
-                    when "0011" =>       -- AND
-                        alu_op <= "010";
-                        next_state <= WRITEBACK;
-            
-                    when "0100" =>       -- OR
-                        alu_op <= "011";
-                        next_state <= WRITEBACK;
-            
-                    when "0101" =>       -- XOR
-                        alu_op <= "100";
-                        next_state <= WRITEBACK;
-            
-                    when "0110" =>       -- NOT
-                        alu_op <= "101";
-                        next_state <= WRITEBACK;
-            
-                    when "0111" =>       -- SHL
-                        alu_op <= "110";
-                        next_state <= WRITEBACK;
-            
-                    when "1000" =>       -- SHR
-                        alu_op <= "111";
-                        next_state <= WRITEBACK;
-                        
-                    when "1001" =>  -- LDI
-                        next_state <= WRITEBACK;
-                        
-                    when "1010" =>  -- LOAD
-                        next_state <= MEMORY;
-                   
-                    when "1011" =>  -- STORE
-                        next_state <= MEMORY;
-                    when others =>
-                        next_state <= FETCH_ROM;
-            
-                end case;
+                when DECODE =>
+                    next_state <= EXECUTE;
+        
+                when EXECUTE =>
+                    case opcode is
                 
-            when MEMORY =>
-            
-                case opcode is
-            
-                    when "1010" =>  -- LOAD
-            
-                        ram_read_enable <= '1';
-            
-                        next_state <= WRITEBACK;
-            
-                    when "1011" =>  -- STORE
-            
-                        ram_write_enable <= '1';
-            
-                        pc_enable <= '1';
-            
-                        next_state <= FETCH_ROM;
-            
-                    when others =>
-            
-                        next_state <= FETCH_ROM;
-            
-                end case;
+                        -- NOP
+                        when "0000" =>
+                            pc_enable <= '1';
+                            next_state <= FETCH_ROM;
                 
-            when WRITEBACK =>
-                reg_write_enable <= '1';
-                pc_enable        <= '1';
-            
-                case opcode is
-            
-                    when "1001" =>  -- LDI
-                        reg_write_sel <= "01";
-            
-                    when "1010" =>  -- LOAD
-                        reg_write_sel <= "10";
-            
-                    when others =>   -- ALU
-                        reg_write_sel <= "00";
-            
-                end case;
-            
-                next_state <= FETCH_ROM;
-    
-        end case;
+                        -- Instructions ALU
+                        when "0001" | "0010" | "0011" | "0100" |
+                             "0101" | "0110" | "0111" | "1000" =>
+                
+                            flags_write_enable <= '1';
+                            next_state <= WRITEBACK;
+                
+                        -- LDI
+                        when "1001" =>
+                            next_state <= WRITEBACK;
+                
+                        -- LOAD / STORE
+                        when "1010" | "1011" =>
+                            next_state <= MEMORY;
+                
+                        -- JMP
+                        when "1100" =>
+                            pc_load <= '1';
+                            next_state <= FETCH_ROM;
+                
+                        -- JZ
+                        when "1101" =>
+                
+                            if flag_z = '1' then
+                                pc_load <= '1';
+                            else
+                                pc_enable <= '1';
+                            end if;
+                
+                            next_state <= FETCH_ROM;
+                
+                        -- Instruction inconnue
+                        when others =>
+                            pc_enable <= '1';
+                            next_state <= FETCH_ROM;
+                
+                    end case;
+                    
+                when MEMORY =>
+                
+                    case opcode is
+                
+                        when "1010" =>  -- LOAD
+                
+                            ram_read_enable <= '1';
+                
+                            next_state <= WRITEBACK;
+                
+                        when "1011" =>  -- STORE
+                
+                            ram_write_enable <= '1';
+                
+                            pc_enable <= '1';
+                
+                            next_state <= FETCH_ROM;
+                
+                        when others =>
+                
+                            next_state <= FETCH_ROM;
+                
+                    end case;
+                    
+                when WRITEBACK =>
+                    reg_write_enable <= '1';
+                    pc_enable        <= '1';
+                
+                    case opcode is
+                
+                        when "1001" =>  -- LDI
+                            reg_write_sel <= "01";
+                
+                        when "1010" =>  -- LOAD
+                            reg_write_sel <= "10";
+                
+                        when others =>   -- ALU
+                            reg_write_sel <= "00";
+                
+                    end case;
+                
+                    next_state <= FETCH_ROM;
+        
+            end case;
+        else
+            next_state <= FETCH_ROM;
+        end if;
+
     end process;
 
 end rtl;
-
-
-
-
-
-
-
-
 
 

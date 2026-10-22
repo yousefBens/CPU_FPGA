@@ -28,21 +28,22 @@ begin
         if rising_edge(Clk) then
 
             if rst = '1' then
+
                 pc_reg <= (others => '0');
+
+            elsif pc_load = '1' then
+
+                -- Charger une adresse pour JMP ou JZ
+                pc_reg <= unsigned(pc_load_data);
 
             elsif pc_enable = '1' then
 
-                if pc_load = '1' then
-                    pc_reg <= unsigned(pc_load_data);
-                else
-                    pc_reg <= pc_reg + 1;
-                end if;
+                -- Passer à l'instruction suivante
+                pc_reg <= pc_reg + 1;
 
             end if;
 
         end if;
     end process;
-
-    
 
 end rtl;
