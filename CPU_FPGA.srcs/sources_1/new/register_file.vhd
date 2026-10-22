@@ -7,15 +7,12 @@ entity register_file is
         Clk : in std_logic;
         rst : in std_logic;
 
-        -- Read port A
         read_addr_a : in  std_logic_vector(2 downto 0);
         read_data_a : out std_logic_vector(7 downto 0);
 
-        -- Read port B
         read_addr_b : in  std_logic_vector(2 downto 0);
         read_data_b : out std_logic_vector(7 downto 0);
 
-        -- Write port
         write_enable : in std_logic;
         write_addr   : in std_logic_vector(2 downto 0);
         write_data   : in std_logic_vector(7 downto 0)
@@ -30,18 +27,13 @@ architecture rtl of register_file is
 
 begin
 
-    --------------------------------------------------
     -- Asynchronous read ports
-    --------------------------------------------------
-
     read_data_a <= registers(to_integer(unsigned(read_addr_a)));
 
     read_data_b <= registers(to_integer(unsigned(read_addr_b)));
 
-    --------------------------------------------------
-    -- Synchronous write port
-    --------------------------------------------------
 
+    -- Synchronous write port
     process(Clk)
     begin
         if rising_edge(Clk) then
