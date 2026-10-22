@@ -93,7 +93,7 @@ begin
             case opcode is
             
                 when "0001" => alu_op <= "000"; -- ADD
-                when "0010" => alu_op <= "001"; -- SUB
+                when "0010" | "1110" => alu_op <= "001"; -- SUB
                 when "0011" => alu_op <= "010"; -- AND
                 when "0100" => alu_op <= "011"; -- OR
                 when "0101" => alu_op <= "100"; -- XOR
@@ -131,6 +131,14 @@ begin
                             flags_write_enable <= '1';
                             next_state <= WRITEBACK;
                 
+                        when "1110" =>  -- CMP
+                        
+                            flags_write_enable <= '1';
+                        
+                            pc_enable <= '1';
+                        
+                            next_state <= FETCH_ROM;
+                            
                         -- LDI
                         when "1001" =>
                             next_state <= WRITEBACK;

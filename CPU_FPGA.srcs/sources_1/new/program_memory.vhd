@@ -17,12 +17,17 @@ architecture rtl of program_memory is
     
     type rom_type is array (0 to 255) of std_logic_vector(15 downto 0);
     constant ROM : rom_type := (
-        0 => x"1234",
-        1 => x"5678",
-        2 => x"ABCD",
-        3 => x"F001",
-        4 => x"00FF",
-
+        0 => x"920A",  -- LDI R1, 10
+        1 => x"940A",  -- LDI R2, 10
+        2 => x"E280",  -- CMP R1, R2
+        3 => x"D006",  -- JZ 0x06
+    
+        4 => x"9663",  -- LDI R3, 99
+        5 => x"F000",  -- HALT
+    
+        6 => x"962A",  -- LDI R3, 42
+        7 => x"F000",  -- HALT
+    
         others => x"0000"
     );
     
