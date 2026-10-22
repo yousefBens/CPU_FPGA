@@ -83,9 +83,22 @@ begin
         ram_read_enable    <= '0';
         ram_write_enable   <= '0';
     
-        alu_op             <= "000";
         flags_write_enable <= '0';
         halted             <= '0';
+        
+        case opcode is
+        
+            when "0001" => alu_op <= "000"; -- ADD
+            when "0010" => alu_op <= "001"; -- SUB
+            when "0011" => alu_op <= "010"; -- AND
+            when "0100" => alu_op <= "011"; -- OR
+            when "0101" => alu_op <= "100"; -- XOR
+            when "0110" => alu_op <= "101"; -- NOT
+            when "0111" => alu_op <= "110"; -- SHL
+            when "1000" => alu_op <= "111"; -- SHR
+            when others => alu_op <= "000";
+        
+        end case;
         
         case state is
     
@@ -101,17 +114,48 @@ begin
     
             when EXECUTE =>
     
-                if opcode = "0000" then       -- NOP
-                    pc_enable <= '1';
-                    next_state <= FETCH_ROM;
-    
-                elsif opcode = "0001" then    -- ADD
-                    alu_op <= "000";
-                    next_state <= WRITEBACK;
-    
-                else
-                    next_state <= FETCH_ROM;
-                end if;
+                case opcode is
+            
+                    when "0000" =>       -- NOP
+                        pc_enable <= '1';
+                        next_state <= FETCH_ROM;
+            
+                    when "0001" =>       -- ADD
+                        alu_op <= "000";
+                        next_state <= WRITEBACK;
+            
+                    when "0010" =>       -- SUB
+                        alu_op <= "001";
+                        next_state <= WRITEBACK;
+            
+                    when "0011" =>       -- AND
+                        alu_op <= "010";
+                        next_state <= WRITEBACK;
+            
+                    when "0100" =>       -- OR
+                        alu_op <= "011";
+                        next_state <= WRITEBACK;
+            
+                    when "0101" =>       -- XOR
+                        alu_op <= "100";
+                        next_state <= WRITEBACK;
+            
+                    when "0110" =>       -- NOT
+                        alu_op <= "101";
+                        next_state <= WRITEBACK;
+            
+                    when "0111" =>       -- SHL
+                        alu_op <= "110";
+                        next_state <= WRITEBACK;
+            
+                    when "1000" =>       -- SHR
+                        alu_op <= "111";
+                        next_state <= WRITEBACK;
+            
+                    when others =>
+                        next_state <= FETCH_ROM;
+            
+                end case;
     
             when WRITEBACK =>
                 reg_write_sel    <= "00";   -- Résultat ALU
