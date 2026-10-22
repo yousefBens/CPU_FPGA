@@ -3,6 +3,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity instruction_decoderTb is
+--  Port ( );
 end instruction_decoderTb;
 
 architecture DUT of instruction_decoderTb is
