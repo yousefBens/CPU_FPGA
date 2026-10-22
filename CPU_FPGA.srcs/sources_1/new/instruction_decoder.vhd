@@ -2,8 +2,6 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
 
 
 entity instruction_decoder is
