@@ -1,55 +1,56 @@
 {
    "ActiveEmotionalView":"Default View",
-   "Default View_ScaleFactor":"0.717935",
-   "Default View_TopLeft":"-689,-415",
+   "Default View_ScaleFactor":"0.824691",
+   "Default View_TopLeft":"-5,-176",
    "ExpandedHierarchyInLayout":"",
    "guistr":"# # String gsaved with Nlview 7.8.0 2024-04-26 e1825d835c VDI=44 GEI=38 GUI=JA:21.0 TLS
 #  -string -flagsOSRD
 preplace port port-id_Clk -pg 1 -lvl 0 -x -620 -y -100 -defaultsOSRD
 preplace port port-id_rst -pg 1 -lvl 0 -x -620 -y -20 -defaultsOSRD
-preplace port port-id_halted -pg 1 -lvl 10 -x 2620 -y 120 -defaultsOSRD
+preplace port port-id_halted -pg 1 -lvl 11 -x 2830 -y 120 -defaultsOSRD
 preplace inst program_counter_0 -pg 1 -lvl 1 -x -420 -y 0 -defaultsOSRD
 preplace inst program_memory_0 -pg 1 -lvl 2 -x -90 -y 0 -defaultsOSRD
-preplace inst instruction_register_0 -pg 1 -lvl 3 -x 270 -y -10 -defaultsOSRD
-preplace inst instruction_decoder_0 -pg 1 -lvl 4 -x 640 -y -10 -defaultsOSRD
-preplace inst control_unit_0 -pg 1 -lvl 5 -x 1030 -y -10 -defaultsOSRD
-preplace inst register_file_0 -pg 1 -lvl 6 -x 1460 -y -30 -defaultsOSRD
-preplace inst alu_0 -pg 1 -lvl 7 -x 1780 -y 0 -defaultsOSRD
-preplace inst flags_register_0 -pg 1 -lvl 8 -x 2100 -y -20 -defaultsOSRD
-preplace inst data_ram_0 -pg 1 -lvl 9 -x 2450 -y 0 -defaultsOSRD
-preplace inst writeback_mux_0 -pg 1 -lvl 8 -x 2100 -y -260 -defaultsOSRD
-preplace netloc Clk_0_1 1 0 9 -600 100 -220 70 70 80 450 100 870 140 1220 100 N 100 1950 100 2260
-preplace netloc rst_0_1 1 0 8 -590 110 N 110 80 90 N 90 840 -160 1270 -150 N -150 1930
-preplace netloc program_counter_0_pc_out 1 1 1 -270 0n
-preplace netloc program_memory_0_data_out 1 2 1 40 0n
-preplace netloc instruction_register_0_Instruction_out 1 3 1 N -10
-preplace netloc instruction_decoder_0_opcode 1 4 1 860 -50n
-preplace netloc control_unit_0_ir_enable 1 2 4 90 -170 NJ -170 NJ -170 1200
-preplace netloc control_unit_0_pc_enable 1 0 6 -580 -190 NJ -190 NJ -190 NJ -190 NJ -190 1180
-preplace netloc control_unit_0_pc_load 1 0 6 -570 -180 NJ -180 NJ -180 NJ -180 NJ -180 1190
-preplace netloc instruction_decoder_0_jump_addr 1 0 5 -570 120 NJ 120 NJ 120 NJ 120 800
-preplace netloc instruction_decoder_0_rd 1 4 2 850J 150 1270
-preplace netloc instruction_decoder_0_rs 1 4 2 820 160 1280J
-preplace netloc control_unit_0_reg_write_enable 1 5 1 1290 -40n
-preplace netloc register_file_0_read_data_a 1 6 3 1630 150 N 150 2300
-preplace netloc register_file_0_read_data_b 1 6 1 1620 -20n
-preplace netloc control_unit_0_alu_op 1 5 2 1260J 90 1640
-preplace netloc alu_0_Z 1 7 1 N -20
-preplace netloc alu_0_C 1 7 1 N 0
-preplace netloc alu_0_N 1 7 1 N 20
-preplace netloc alu_0_V 1 7 1 N 40
-preplace netloc control_unit_0_flags_write_enable 1 5 3 1240J 110 NJ 110 1930
-preplace netloc flags_register_0_z_out 1 4 5 880 170 NJ 170 NJ 170 NJ 170 2250
-preplace netloc instruction_decoder_0_immediate 1 4 5 810J 180 NJ 180 NJ 180 1940J 110 2290
-preplace netloc control_unit_0_ram_read_enable 1 5 4 1250J 130 NJ 130 NJ 130 2280
-preplace netloc control_unit_0_ram_write_enable 1 5 4 1230J 140 NJ 140 NJ 140 2270
-preplace netloc alu_0_RESULT 1 7 1 1920 -290n
-preplace netloc data_ram_0_read_data 1 7 3 1950 -360 NJ -360 2600
-preplace netloc control_unit_0_reg_write_sel 1 5 3 1210 -230 NJ -230 NJ
-preplace netloc writeback_mux_0_data_out 1 5 4 1300 -350 NJ -350 NJ -350 2250
-preplace netloc control_unit_0_halted 1 5 5 1180J 120 NJ 120 NJ 120 NJ 120 NJ
-levelinfo -pg 1 -620 -420 -90 270 640 1030 1460 1780 2100 2450 2620
-pagesize -pg 1 -db -bbox -sgen -690 -410 2730 300
+preplace inst instruction_register_0 -pg 1 -lvl 4 -x 540 -y -10 -defaultsOSRD
+preplace inst instruction_decoder_0 -pg 1 -lvl 5 -x 880 -y -10 -defaultsOSRD
+preplace inst control_unit_0 -pg 1 -lvl 6 -x 1240 -y -10 -defaultsOSRD
+preplace inst register_file_0 -pg 1 -lvl 7 -x 1660 -y -30 -defaultsOSRD
+preplace inst alu_0 -pg 1 -lvl 8 -x 1970 -y 0 -defaultsOSRD
+preplace inst flags_register_0 -pg 1 -lvl 9 -x 2300 -y -20 -defaultsOSRD
+preplace inst data_ram_0 -pg 1 -lvl 10 -x 2660 -y 0 -defaultsOSRD
+preplace inst writeback_mux_0 -pg 1 -lvl 9 -x 2300 -y -260 -defaultsOSRD
+preplace inst ila_0 -pg 1 -lvl 3 -x 230 -y 250 -defaultsOSRD
+preplace netloc Clk_0_1 1 0 10 -600 -100 -230 -80 60 -40 340 -130 N -130 1080 -190 1500 -190 N -190 2150 -170 2510
+preplace netloc rst_0_1 1 0 9 -590 -110 N -110 N -110 350 -110 N -110 1090 -180 1490 -180 N -180 2140
+preplace netloc program_counter_0_pc_out 1 1 2 -220 -70 40
+preplace netloc program_memory_0_data_out 1 2 2 50 20 N
+preplace netloc instruction_register_0_Instruction_out 1 2 3 130 -100 N -100 720
+preplace netloc instruction_decoder_0_opcode 1 2 4 110 -120 N -120 N -120 1050
+preplace netloc control_unit_0_ir_enable 1 3 4 360 -210 NJ -210 NJ -210 1400
+preplace netloc control_unit_0_pc_enable 1 0 7 -570 -230 NJ -230 NJ -230 N -230 NJ -230 NJ -230 1410
+preplace netloc control_unit_0_pc_load 1 0 7 -580 -200 NJ -200 NJ -200 N -200 NJ -200 NJ -200 1390
+preplace netloc instruction_decoder_0_jump_addr 1 0 6 -570 100 NJ 100 50J 80 360 90 NJ 90 1040
+preplace netloc instruction_decoder_0_rd 1 5 2 1070J -160 1440
+preplace netloc instruction_decoder_0_rs 1 5 2 1060 -170 1420J
+preplace netloc control_unit_0_reg_write_enable 1 2 5 90 -220 N -220 N -220 N -220 1470
+preplace netloc register_file_0_read_data_a 1 7 3 1830 -140 N -140 2470
+preplace netloc register_file_0_read_data_b 1 7 1 1820 -20n
+preplace netloc control_unit_0_alu_op 1 6 2 1430J 90 1830
+preplace netloc alu_0_Z 1 8 1 N -20
+preplace netloc alu_0_C 1 8 1 N 0
+preplace netloc alu_0_N 1 8 1 N 20
+preplace netloc alu_0_V 1 8 1 N 40
+preplace netloc control_unit_0_flags_write_enable 1 6 3 1460J -170 NJ -170 2130
+preplace netloc flags_register_0_z_out 1 2 8 100 100 340 110 N 110 1090 160 NJ 160 NJ 160 NJ 160 2450
+preplace netloc instruction_decoder_0_immediate 1 5 5 1040J -250 NJ -250 NJ -250 2110J -350 2500
+preplace netloc control_unit_0_ram_read_enable 1 6 4 1450J -160 NJ -160 NJ -160 2490
+preplace netloc control_unit_0_ram_write_enable 1 6 4 1480J -150 NJ -150 NJ -150 2480
+preplace netloc alu_0_RESULT 1 2 7 70 -240 N -240 N -240 N -240 N -240 N -240 2120
+preplace netloc data_ram_0_read_data 1 8 3 2150 -360 NJ -360 2810
+preplace netloc control_unit_0_reg_write_sel 1 6 3 1430 -230 NJ -230 NJ
+preplace netloc writeback_mux_0_data_out 1 2 8 120 110 330 150 N 150 N 150 1500 100 NJ 100 NJ 100 2460
+preplace netloc control_unit_0_halted 1 2 9 80 90 350 100 720 140 N 140 1410J 120 NJ 120 NJ 120 NJ 120 NJ
+levelinfo -pg 1 -620 -420 -90 230 540 880 1240 1660 1970 2300 2660 2830
+pagesize -pg 1 -db -bbox -sgen -690 -410 2930 440
 "
 }
 

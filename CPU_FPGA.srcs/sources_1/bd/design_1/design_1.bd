@@ -20,7 +20,8 @@
       "alu_0": "",
       "flags_register_0": "",
       "data_ram_0": "",
-      "writeback_mux_0": ""
+      "writeback_mux_0": "",
+      "ila_0": ""
     },
     "ports": {
       "Clk": {
@@ -580,6 +581,37 @@
             "right": "0"
           }
         }
+      },
+      "ila_0": {
+        "vlnv": "xilinx.com:ip:ila:6.2",
+        "ip_revision": "18",
+        "xci_name": "design_1_ila_0_0",
+        "xci_path": "ip/design_1_ila_0_0/design_1_ila_0_0.xci",
+        "inst_hier_path": "ila_0",
+        "has_run_ip_tcl": "true",
+        "parameters": {
+          "C_MONITOR_TYPE": {
+            "value": "Native"
+          },
+          "C_NUM_OF_PROBES": {
+            "value": "8"
+          },
+          "C_PROBE0_WIDTH": {
+            "value": "8"
+          },
+          "C_PROBE1_WIDTH": {
+            "value": "16"
+          },
+          "C_PROBE2_WIDTH": {
+            "value": "4"
+          },
+          "C_PROBE3_WIDTH": {
+            "value": "8"
+          },
+          "C_PROBE4_WIDTH": {
+            "value": "8"
+          }
+        }
       }
     },
     "nets": {
@@ -592,7 +624,8 @@
           "register_file_0/Clk",
           "flags_register_0/Clk",
           "data_ram_0/Clk",
-          "program_memory_0/Clk"
+          "program_memory_0/Clk",
+          "ila_0/clk"
         ]
       },
       "alu_0_C": {
@@ -610,7 +643,8 @@
       "alu_0_RESULT": {
         "ports": [
           "alu_0/RESULT",
-          "writeback_mux_0/alu_result"
+          "writeback_mux_0/alu_result",
+          "ila_0/probe3"
         ]
       },
       "alu_0_V": {
@@ -640,7 +674,8 @@
       "control_unit_0_halted": {
         "ports": [
           "control_unit_0/halted",
-          "halted"
+          "halted",
+          "ila_0/probe7"
         ]
       },
       "control_unit_0_ir_enable": {
@@ -676,7 +711,8 @@
       "control_unit_0_reg_write_enable": {
         "ports": [
           "control_unit_0/reg_write_enable",
-          "register_file_0/write_enable"
+          "register_file_0/write_enable",
+          "ila_0/probe5"
         ]
       },
       "control_unit_0_reg_write_sel": {
@@ -694,7 +730,8 @@
       "flags_register_0_z_out": {
         "ports": [
           "flags_register_0/z_out",
-          "control_unit_0/flag_z"
+          "control_unit_0/flag_z",
+          "ila_0/probe6"
         ]
       },
       "instruction_decoder_0_immediate": {
@@ -713,7 +750,8 @@
       "instruction_decoder_0_opcode": {
         "ports": [
           "instruction_decoder_0/opcode",
-          "control_unit_0/opcode"
+          "control_unit_0/opcode",
+          "ila_0/probe2"
         ]
       },
       "instruction_decoder_0_rd": {
@@ -732,13 +770,15 @@
       "instruction_register_0_Instruction_out": {
         "ports": [
           "instruction_register_0/Instruction_out",
-          "instruction_decoder_0/Instruction_in"
+          "instruction_decoder_0/Instruction_in",
+          "ila_0/probe1"
         ]
       },
       "program_counter_0_pc_out": {
         "ports": [
           "program_counter_0/pc_out",
-          "program_memory_0/addr"
+          "program_memory_0/addr",
+          "ila_0/probe0"
         ]
       },
       "program_memory_0_data_out": {
@@ -773,7 +813,8 @@
       "writeback_mux_0_data_out": {
         "ports": [
           "writeback_mux_0/data_out",
-          "register_file_0/write_data"
+          "register_file_0/write_data",
+          "ila_0/probe4"
         ]
       }
     }
