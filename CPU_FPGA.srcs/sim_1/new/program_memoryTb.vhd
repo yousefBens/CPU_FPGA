@@ -8,11 +8,9 @@ end program_memoryTb;
 architecture tb of program_memoryTb is
 
     constant CLK_PERIOD : time := 10 ns;
-
     signal Clk : std_logic := '0';
 
-    signal addr : std_logic_vector(7 downto 0)
-        := (others => '0');
+    signal addr : std_logic_vector(7 downto 0) := (others => '0');
 
     signal data_out : std_logic_vector(15 downto 0);
 
