@@ -151,6 +151,8 @@ begin
                     when "1000" =>       -- SHR
                         alu_op <= "111";
                         next_state <= WRITEBACK;
+                    when "1001" =>  -- LDI
+                        next_state <= WRITEBACK;
             
                     when others =>
                         next_state <= FETCH_ROM;
@@ -158,10 +160,18 @@ begin
                 end case;
     
             when WRITEBACK =>
-                reg_write_sel    <= "00";   -- Résultat ALU
                 reg_write_enable <= '1';    -- Écriture Register File
-            
                 pc_enable        <= '1';    -- Incrémentation PC
+                
+                -- Sélectionner la source de la donnée
+                if opcode = "1001" then
+                    -- LDI : écrire la valeur immédiate
+                    reg_write_sel <= "01";
+                else
+                    -- Instructions arithmétiques : résultat ALU
+                    reg_write_sel <= "00";
+                end if;     
+                            
                 next_state <= FETCH_ROM;
     
         end case;

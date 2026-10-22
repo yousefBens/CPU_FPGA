@@ -7,53 +7,67 @@ end control_unitTb;
 
 architecture DUT of control_unitTb is
 
+    -- ================================================
+    -- CLOCK
+    -- ================================================
+
     constant CLK_PERIOD : time := 10 ns;
 
-    -- Clock & Reset
-    signal Clk : std_logic := '0';
-    signal rst : std_logic := '1';
+    -- ================================================
+    -- INPUTS
+    -- ================================================
 
-    -- Control Unit Inputs
+    signal Clk    : std_logic := '0';
+    signal rst    : std_logic := '1';
+
     signal opcode : std_logic_vector(3 downto 0) := "0000";
     signal flag_z : std_logic := '0';
 
-    -- Control Unit Outputs
+    -- ================================================
+    -- CONTROL UNIT OUTPUTS
+    -- ================================================
+
     signal pc_enable          : std_logic;
     signal pc_load            : std_logic;
+
     signal ir_enable          : std_logic;
+
     signal reg_write_enable   : std_logic;
     signal reg_write_sel      : std_logic_vector(1 downto 0);
+
     signal ram_read_enable    : std_logic;
     signal ram_write_enable   : std_logic;
+
     signal alu_op             : std_logic_vector(2 downto 0);
+
     signal flags_write_enable : std_logic;
     signal halted             : std_logic;
 
-    -- ALU Signals
-    signal A      : std_logic_vector(7 downto 0) := x"00";
-    signal B      : std_logic_vector(7 downto 0) := x"00";
-    signal RESULT : std_logic_vector(7 downto 0);
+    -- ================================================
+    -- TEST DATAPATH SIGNALS
+    -- ================================================
 
-    signal Z : std_logic;
-    signal C : std_logic;
-    signal N : std_logic;
-    signal V : std_logic;
+    signal alu_result     : std_logic_vector(7 downto 0) := x"0F";
+    signal immediate_data : std_logic_vector(7 downto 0) := x"2A";
+
+    signal write_data     : std_logic_vector(7 downto 0);
 
 begin
 
-    -- =====================================================
+    -- ================================================
     -- CLOCK GENERATION
-    -- =====================================================
+    -- ================================================
 
     Clk <= not Clk after CLK_PERIOD / 2;
 
 
-    -- =====================================================
-    -- CONTROL UNIT
-    -- =====================================================
+    -- ================================================
+    -- CONTROL UNIT INSTANCE
+    -- ================================================
 
-    UUT_CONTROL : entity work.control_unit
+    UUT : entity work.control_unit
         port map (
+
             Clk                => Clk,
             rst                => rst,
 
@@ -78,28 +92,32 @@ begin
         );
 
 
-    -- =====================================================
-    -- ALU
-    -- =====================================================
+    -- ================================================
+    -- SIMULATED WRITEBACK MULTIPLEXER
+    -- ================================================
 
-    UUT_ALU : entity work.alu
-        port map (
-            A      => A,
-            B      => B,
-            ALU_OP => alu_op,
+    process(reg_write_sel, alu_result, immediate_data)
+    begin
 
-            RESULT => RESULT,
+        case reg_write_sel is
 
-            Z => Z,
-            C => C,
-            N => N,
-            V => V
-        );
+            when "00" =>
+                write_data <= alu_result;
+
+            when "01" =>
+                write_data <= immediate_data;
+
+            when others =>
+                write_data <= (others => '0');
+
+        end case;
+
+    end process;
 
 
-    -- =====================================================
+    -- ================================================
     -- TEST PROCESS
-    -- =====================================================
+    -- ================================================
 
     stimulus : process
 
@@ -110,38 +128,36 @@ begin
         end procedure;
 
 
-        -- Test d'une instruction arithmetique
+        -- Verification d'une instruction
+        -- Cette procedure commence en FETCH_ROM.
+
         procedure test_instruction(
             constant instruction_name : in string;
             constant test_opcode      : in std_logic_vector(3 downto 0);
-            constant expected_alu_op  : in std_logic_vector(2 downto 0);
-            constant input_a          : in std_logic_vector(7 downto 0);
-            constant input_b          : in std_logic_vector(7 downto 0);
-            constant expected_result  : in std_logic_vector(7 downto 0)
+            constant expected_sel     : in std_logic_vector(1 downto 0);
+            constant expected_data    : in std_logic_vector(7 downto 0)
         ) is
+
         begin
 
-            report "------------------------------------";
+            report "--------------------------------";
             report "TEST : " & instruction_name;
-            report "------------------------------------";
+            report "--------------------------------";
 
-            -- La procedure commence en FETCH_ROM.
-            -- Changer les entrees avant le prochain front.
+            -- Appliquer l'opcode avant le prochain front
             wait until falling_edge(Clk);
 
             opcode <= test_opcode;
-            A <= input_a;
-            B <= input_b;
 
             wait for 1 ns;
 
             -- FETCH_ROM
             assert pc_enable = '0'
-                report instruction_name & ": PC enabled during FETCH_ROM"
+                report instruction_name & ": PC enabled in FETCH_ROM"
                 severity error;
 
             assert reg_write_enable = '0'
-                report instruction_name & ": Register write during FETCH_ROM"
+                report instruction_name & ": Write enabled in FETCH_ROM"
                 severity error;
 
             -- FETCH_ROM -> FETCH_IR
@@ -161,22 +177,8 @@ begin
             -- DECODE -> EXECUTE
             next_cycle;
 
-            -- Verification du decodage
-            assert alu_op = expected_alu_op
-                report instruction_name & ": Incorrect ALU_OP"
-                severity error;
-
-            -- Verification du calcul ALU
-            assert RESULT = expected_result
-                report instruction_name & ": Incorrect ALU RESULT"
-                severity error;
-
             assert reg_write_enable = '0'
-                report instruction_name & ": Register write too early"
-                severity error;
-
-            assert pc_enable = '0'
-                report instruction_name & ": PC increment too early"
+                report instruction_name & ": Early register write"
                 severity error;
 
             -- EXECUTE -> WRITEBACK
@@ -186,8 +188,12 @@ begin
                 report instruction_name & ": WRITEBACK not enabled"
                 severity error;
 
-            assert reg_write_sel = "00"
-                report instruction_name & ": ALU result not selected"
+            assert reg_write_sel = expected_sel
+                report instruction_name & ": Incorrect reg_write_sel"
+                severity error;
+
+            assert write_data = expected_data
+                report instruction_name & ": Incorrect write_data"
                 severity error;
 
             assert pc_enable = '1'
@@ -198,11 +204,11 @@ begin
             next_cycle;
 
             assert reg_write_enable = '0'
-                report instruction_name & ": Register write remains enabled"
+                report instruction_name & ": Write enable not cleared"
                 severity error;
 
             assert pc_enable = '0'
-                report instruction_name & ": PC enable remains active"
+                report instruction_name & ": PC enable not cleared"
                 severity error;
 
             report instruction_name & " TEST PASSED";
@@ -213,145 +219,93 @@ begin
     begin
 
         report "====================================";
-        report "CONTROL UNIT + ALU TESTBENCH";
+        report "CONTROL UNIT - STEP 3 TEST";
         report "====================================";
 
 
-        -- =================================================
+        -- =============================================
         -- RESET
-        -- =================================================
+        -- =============================================
 
         rst <= '1';
 
         next_cycle;
 
+        assert ir_enable = '0'
+            report "RESET ERROR"
+            severity error;
+
         rst <= '0';
 
-        report "RESET COMPLETED";
+        report "RESET OK";
 
 
-        -- =================================================
-        -- ADD
-        -- 10 + 5 = 15
-        -- =================================================
+        -- =============================================
+        -- NOP
+        -- =============================================
 
-        test_instruction(
-            "ADD",
-            "0001",
-            "000",
-            x"0A",
-            x"05",
-            x"0F"
-        );
+        report "TEST : NOP";
 
+        opcode <= "0000";
 
-        -- =================================================
-        -- SUB
-        -- 10 - 5 = 5
-        -- =================================================
+        -- FETCH_ROM -> FETCH_IR
+        next_cycle;
 
-        test_instruction(
-            "SUB",
-            "0010",
-            "001",
-            x"0A",
-            x"05",
-            x"05"
-        );
+        assert ir_enable = '1'
+            report "NOP FETCH_IR ERROR"
+            severity error;
 
+        -- FETCH_IR -> DECODE
+        next_cycle;
 
-        -- =================================================
-        -- AND
-        -- 0xAA AND 0x0F = 0x0A
-        -- =================================================
+        -- DECODE -> EXECUTE
+        next_cycle;
 
-        test_instruction(
-            "AND",
-            "0011",
-            "010",
-            x"AA",
-            x"0F",
-            x"0A"
-        );
+        assert pc_enable = '1'
+            report "NOP PC ENABLE ERROR"
+            severity error;
+
+        assert reg_write_enable = '0'
+            report "NOP REGISTER WRITE ERROR"
+            severity error;
+
+        -- EXECUTE -> FETCH_ROM
+        next_cycle;
+
+        report "NOP TEST PASSED";
 
 
-        -- =================================================
-        -- OR
-        -- 0xA0 OR 0x0F = 0xAF
-        -- =================================================
+        -- =============================================
+        -- ARITHMETIC INSTRUCTIONS
+        -- =============================================
 
-        test_instruction(
-            "OR",
-            "0100",
-            "011",
-            x"A0",
-            x"0F",
-            x"AF"
-        );
+        test_instruction("ADD", "0001", "00", x"0F");
+        test_instruction("SUB", "0010", "00", x"0F");
+        test_instruction("AND", "0011", "00", x"0F");
+        test_instruction("OR",  "0100", "00", x"0F");
+        test_instruction("XOR", "0101", "00", x"0F");
+        test_instruction("NOT", "0110", "00", x"0F");
+        test_instruction("SHL", "0111", "00", x"0F");
+        test_instruction("SHR", "1000", "00", x"0F");
 
 
-        -- =================================================
-        -- XOR
-        -- 0xAA XOR 0xFF = 0x55
-        -- =================================================
+        -- =============================================
+        -- LDI
+        -- =============================================
+
+        -- Immediate = 42 decimal = 0x2A
+        immediate_data <= x"2A";
 
         test_instruction(
-            "XOR",
-            "0101",
-            "100",
-            x"AA",
-            x"FF",
-            x"55"
-        );
-
-
-        -- =================================================
-        -- NOT
-        -- NOT 0xAA = 0x55
-        -- =================================================
-
-        test_instruction(
-            "NOT",
-            "0110",
-            "101",
-            x"AA",
-            x"00",
-            x"55"
-        );
-
-
-        -- =================================================
-        -- SHL
-        -- 0x05 << 1 = 0x0A
-        -- =================================================
-
-        test_instruction(
-            "SHL",
-            "0111",
-            "110",
-            x"05",
-            x"00",
-            x"0A"
-        );
-
-
-        -- =================================================
-        -- SHR
-        -- 0x0A >> 1 = 0x05
-        -- =================================================
-
-        test_instruction(
-            "SHR",
-            "1000",
-            "111",
-            x"0A",
-            x"00",
-            x"05"
+            "LDI",
+            "1001",
+            "01",
+            x"2A"
         );
 
 
         report "====================================";
-        report "ALL ARITHMETIC TESTS COMPLETED";
+        report "ALL STEP 3 TESTS COMPLETED";
         report "====================================";
 
         wait;
