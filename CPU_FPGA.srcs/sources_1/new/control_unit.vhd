@@ -70,8 +70,23 @@ begin
 
     process(state, opcode, flag_z)
     begin
-        next_state <= state;
     
+        next_state         <= state;
+    
+        pc_enable          <= '0';
+        pc_load            <= '0';
+        ir_enable          <= '0';
+    
+        reg_write_enable   <= '0';
+        reg_write_sel      <= "00";
+    
+        ram_read_enable    <= '0';
+        ram_write_enable   <= '0';
+    
+        alu_op             <= "000";
+        flags_write_enable <= '0';
+        halted             <= '0';
+        
         case state is
     
             when FETCH_ROM =>
@@ -87,9 +102,11 @@ begin
             when EXECUTE =>
     
                 if opcode = "0000" then       -- NOP
+                    pc_enable <= '1';
                     next_state <= FETCH_ROM;
     
                 elsif opcode = "0001" then    -- ADD
+                    alu_op <= "000";
                     next_state <= WRITEBACK;
     
                 else
@@ -97,8 +114,10 @@ begin
                 end if;
     
             when WRITEBACK =>
-                reg_write_enable <= '1';
-                pc_enable <= '1';
+                reg_write_sel    <= "00";   -- Résultat ALU
+                reg_write_enable <= '1';    -- Écriture Register File
+            
+                pc_enable        <= '1';    -- Incrémentation PC
                 next_state <= FETCH_ROM;
     
         end case;
