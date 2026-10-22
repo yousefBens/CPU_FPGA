@@ -7,67 +7,55 @@ end control_unitTb;
 
 architecture DUT of control_unitTb is
 
-    -- ================================================
-    -- CLOCK
-    -- ================================================
-
     constant CLK_PERIOD : time := 10 ns;
 
-    -- ================================================
-    -- INPUTS
-    -- ================================================
+    -- Clock & Reset
+    signal Clk : std_logic := '0';
+    signal rst : std_logic := '1';
 
-    signal Clk    : std_logic := '0';
-    signal rst    : std_logic := '1';
-
+    -- Instruction & Flags
     signal opcode : std_logic_vector(3 downto 0) := "0000";
     signal flag_z : std_logic := '0';
 
-    -- ================================================
-    -- CONTROL UNIT OUTPUTS
-    -- ================================================
+    -- Program Counter
+    signal pc_enable : std_logic;
+    signal pc_load   : std_logic;
 
-    signal pc_enable          : std_logic;
-    signal pc_load            : std_logic;
+    -- Instruction Register
+    signal ir_enable : std_logic;
 
-    signal ir_enable          : std_logic;
+    -- Register File
+    signal reg_write_enable : std_logic;
+    signal reg_write_sel    : std_logic_vector(1 downto 0);
 
-    signal reg_write_enable   : std_logic;
-    signal reg_write_sel      : std_logic_vector(1 downto 0);
+    -- Data RAM
+    signal ram_read_enable  : std_logic;
+    signal ram_write_enable : std_logic;
 
-    signal ram_read_enable    : std_logic;
-    signal ram_write_enable   : std_logic;
+    -- ALU
+    signal alu_op : std_logic_vector(2 downto 0);
 
-    signal alu_op             : std_logic_vector(2 downto 0);
-
+    -- Flags Register
     signal flags_write_enable : std_logic;
-    signal halted             : std_logic;
 
-    -- ================================================
-    -- TEST DATAPATH SIGNALS
-    -- ================================================
-
-    signal alu_result     : std_logic_vector(7 downto 0) := x"0F";
-    signal immediate_data : std_logic_vector(7 downto 0) := x"2A";
-
-    signal write_data     : std_logic_vector(7 downto 0);
+    -- CPU Status
+    signal halted : std_logic;
 
 begin
 
-    -- ================================================
-    -- CLOCK GENERATION
-    -- ================================================
+    -- =====================================================
+    -- CLOCK
+    -- =====================================================
 
     Clk <= not Clk after CLK_PERIOD / 2;
 
 
-    -- ================================================
-    -- CONTROL UNIT INSTANCE
-    -- ================================================
+    -- =====================================================
+    -- CONTROL UNIT
+    -- =====================================================
 
     UUT : entity work.control_unit
         port map (
-
             Clk                => Clk,
             rst                => rst,
 
@@ -92,35 +80,13 @@ begin
         );
 
 
-    -- ================================================
-    -- SIMULATED WRITEBACK MULTIPLEXER
-    -- ================================================
-
-    process(reg_write_sel, alu_result, immediate_data)
-    begin
-
-        case reg_write_sel is
-
-            when "00" =>
-                write_data <= alu_result;
-
-            when "01" =>
-                write_data <= immediate_data;
-
-            when others =>
-                write_data <= (others => '0');
-
-        end case;
-
-    end process;
-
-
-    -- ================================================
+    -- =====================================================
     -- TEST PROCESS
-    -- ================================================
+    -- =====================================================
 
     stimulus : process
 
+        -- Attendre un front montant puis la stabilisation
         procedure next_cycle is
         begin
             wait until rising_edge(Clk);
@@ -128,90 +94,246 @@ begin
         end procedure;
 
 
-        -- Verification d'une instruction
-        -- Cette procedure commence en FETCH_ROM.
-
-        procedure test_instruction(
-            constant instruction_name : in string;
-            constant test_opcode      : in std_logic_vector(3 downto 0);
-            constant expected_sel     : in std_logic_vector(1 downto 0);
-            constant expected_data    : in std_logic_vector(7 downto 0)
-        ) is
-
+        -- Vérifier les signaux inactifs
+        procedure check_idle is
         begin
+            assert ram_read_enable = '0'
+                report "Unexpected RAM read"
+                severity error;
 
-            report "--------------------------------";
-            report "TEST : " & instruction_name;
-            report "--------------------------------";
-
-            -- Appliquer l'opcode avant le prochain front
-            wait until falling_edge(Clk);
-
-            opcode <= test_opcode;
-
-            wait for 1 ns;
-
-            -- FETCH_ROM
-            assert pc_enable = '0'
-                report instruction_name & ": PC enabled in FETCH_ROM"
+            assert ram_write_enable = '0'
+                report "Unexpected RAM write"
                 severity error;
 
             assert reg_write_enable = '0'
-                report instruction_name & ": Write enabled in FETCH_ROM"
+                report "Unexpected Register File write"
                 severity error;
+
+            assert pc_enable = '0'
+                report "Unexpected PC increment"
+                severity error;
+        end procedure;
+
+
+        -- =================================================
+        -- TEST ALU / LDI
+        -- =================================================
+
+        procedure test_writeback_instruction(
+            constant instruction_name : in string;
+            constant test_opcode      : in std_logic_vector(3 downto 0);
+            constant expected_sel     : in std_logic_vector(1 downto 0);
+            constant expected_alu_op  : in std_logic_vector(2 downto 0)
+        ) is
+        begin
+
+            report "TEST : " & instruction_name;
+
+            -- La FSM doit être en FETCH_ROM
+            wait until falling_edge(Clk);
+            opcode <= test_opcode;
+            wait for 1 ns;
+
+            check_idle;
 
             -- FETCH_ROM -> FETCH_IR
             next_cycle;
 
             assert ir_enable = '1'
-                report instruction_name & ": FETCH_IR error"
+                report instruction_name & ": FETCH_IR ERROR"
                 severity error;
 
             -- FETCH_IR -> DECODE
             next_cycle;
 
-            assert ir_enable = '0'
-                report instruction_name & ": DECODE error"
-                severity error;
+            check_idle;
 
             -- DECODE -> EXECUTE
             next_cycle;
 
-            assert reg_write_enable = '0'
-                report instruction_name & ": Early register write"
+            assert alu_op = expected_alu_op
+                report instruction_name & ": ALU_OP ERROR"
                 severity error;
+
+            check_idle;
 
             -- EXECUTE -> WRITEBACK
             next_cycle;
 
             assert reg_write_enable = '1'
-                report instruction_name & ": WRITEBACK not enabled"
+                report instruction_name & ": WRITEBACK ERROR"
                 severity error;
 
             assert reg_write_sel = expected_sel
-                report instruction_name & ": Incorrect reg_write_sel"
-                severity error;
-
-            assert write_data = expected_data
-                report instruction_name & ": Incorrect write_data"
+                report instruction_name & ": WRITEBACK MUX ERROR"
                 severity error;
 
             assert pc_enable = '1'
-                report instruction_name & ": PC increment not enabled"
+                report instruction_name & ": PC ERROR"
+                severity error;
+
+            assert alu_op = expected_alu_op
+                report instruction_name & ": ALU_OP changed in WRITEBACK"
+                severity error;
+
+            assert ram_read_enable = '0' and
+                   ram_write_enable = '0'
+                report instruction_name & ": Unexpected RAM access"
                 severity error;
 
             -- WRITEBACK -> FETCH_ROM
             next_cycle;
 
+            check_idle;
+
+            report instruction_name & " TEST PASSED";
+
+        end procedure;
+
+
+        -- =================================================
+        -- TEST LOAD
+        -- =================================================
+
+        procedure test_load is
+        begin
+
+            report "================================";
+            report "TEST LOAD";
+            report "================================";
+
+            wait until falling_edge(Clk);
+            opcode <= "1010";
+            wait for 1 ns;
+
+            -- FETCH_ROM
+            check_idle;
+
+            -- FETCH_ROM -> FETCH_IR
+            next_cycle;
+
+            assert ir_enable = '1'
+                report "LOAD: FETCH_IR ERROR"
+                severity error;
+
+            -- FETCH_IR -> DECODE
+            next_cycle;
+
+            check_idle;
+
+            -- DECODE -> EXECUTE
+            next_cycle;
+
+            check_idle;
+
+            -- EXECUTE -> MEMORY
+            next_cycle;
+
+            assert ram_read_enable = '1'
+                report "LOAD: RAM READ NOT ENABLED"
+                severity error;
+
+            assert ram_write_enable = '0'
+                report "LOAD: RAM WRITE ENABLED"
+                severity error;
+
             assert reg_write_enable = '0'
-                report instruction_name & ": Write enable not cleared"
+                report "LOAD: REGISTER WRITE TOO EARLY"
                 severity error;
 
             assert pc_enable = '0'
-                report instruction_name & ": PC enable not cleared"
+                report "LOAD: PC INCREMENT TOO EARLY"
                 severity error;
 
-            report instruction_name & " TEST PASSED";
+            -- MEMORY -> WRITEBACK
+            next_cycle;
+
+            assert ram_read_enable = '0'
+                report "LOAD: RAM READ STILL ENABLED"
+                severity error;
+
+            assert reg_write_enable = '1'
+                report "LOAD: REGISTER WRITE NOT ENABLED"
+                severity error;
+
+            assert reg_write_sel = "10"
+                report "LOAD: RAM DATA NOT SELECTED"
+                severity error;
+
+            assert pc_enable = '1'
+                report "LOAD: PC NOT ENABLED"
+                severity error;
+
+            -- WRITEBACK -> FETCH_ROM
+            next_cycle;
+
+            check_idle;
+
+            report "LOAD TEST PASSED";
+
+        end procedure;
+
+
+        -- =================================================
+        -- TEST STORE
+        -- =================================================
+
+        procedure test_store is
+        begin
+
+            report "================================";
+            report "TEST STORE";
+            report "================================";
+
+            wait until falling_edge(Clk);
+            opcode <= "1011";
+            wait for 1 ns;
+
+            -- FETCH_ROM
+            check_idle;
+
+            -- FETCH_ROM -> FETCH_IR
+            next_cycle;
+
+            assert ir_enable = '1'
+                report "STORE: FETCH_IR ERROR"
+                severity error;
+
+            -- FETCH_IR -> DECODE
+            next_cycle;
+
+            check_idle;
+
+            -- DECODE -> EXECUTE
+            next_cycle;
+
+            check_idle;
+
+            -- EXECUTE -> MEMORY
+            next_cycle;
+
+            assert ram_write_enable = '1'
+                report "STORE: RAM WRITE NOT ENABLED"
+                severity error;
+
+            assert ram_read_enable = '0'
+                report "STORE: RAM READ ENABLED"
+                severity error;
+
+            assert reg_write_enable = '0'
+                report "STORE: REGISTER WRITE ENABLED"
+                severity error;
+
+            assert pc_enable = '1'
+                report "STORE: PC NOT ENABLED"
+                severity error;
+
+            -- MEMORY -> FETCH_ROM
+            next_cycle;
+
+            check_idle;
+
+            report "STORE TEST PASSED";
 
         end procedure;
 
@@ -219,93 +341,94 @@ begin
     begin
 
         report "====================================";
-        report "CONTROL UNIT - STEP 3 TEST";
+        report "CONTROL UNIT - STEP 4 TESTBENCH";
         report "====================================";
 
 
-        -- =============================================
+        -- =================================================
         -- RESET
-        -- =============================================
+        -- =================================================
 
         rst <= '1';
 
         next_cycle;
 
-        assert ir_enable = '0'
-            report "RESET ERROR"
-            severity error;
+        check_idle;
 
         rst <= '0';
 
-        report "RESET OK";
+        report "RESET TEST PASSED";
 
 
-        -- =============================================
+        -- =================================================
         -- NOP
-        -- =============================================
+        -- =================================================
 
-        report "TEST : NOP";
+        report "TEST NOP";
 
         opcode <= "0000";
 
-        -- FETCH_ROM -> FETCH_IR
-        next_cycle;
-
+        next_cycle; -- FETCH_IR
         assert ir_enable = '1'
             report "NOP FETCH_IR ERROR"
             severity error;
 
-        -- FETCH_IR -> DECODE
-        next_cycle;
+        next_cycle; -- DECODE
+        check_idle;
 
-        -- DECODE -> EXECUTE
-        next_cycle;
+        next_cycle; -- EXECUTE
 
         assert pc_enable = '1'
-            report "NOP PC ENABLE ERROR"
+            report "NOP PC ERROR"
             severity error;
 
         assert reg_write_enable = '0'
             report "NOP REGISTER WRITE ERROR"
             severity error;
 
-        -- EXECUTE -> FETCH_ROM
-        next_cycle;
+        next_cycle; -- FETCH_ROM
+        check_idle;
 
         report "NOP TEST PASSED";
 
 
-        -- =============================================
-        -- ARITHMETIC INSTRUCTIONS
-        -- =============================================
+        -- =================================================
+        -- ALU INSTRUCTIONS
+        -- =================================================
 
-        test_instruction("ADD", "0001", "00", x"0F");
-        test_instruction("SUB", "0010", "00", x"0F");
-        test_instruction("AND", "0011", "00", x"0F");
-        test_instruction("OR",  "0100", "00", x"0F");
-        test_instruction("XOR", "0101", "00", x"0F");
-        test_instruction("NOT", "0110", "00", x"0F");
-        test_instruction("SHL", "0111", "00", x"0F");
-        test_instruction("SHR", "1000", "00", x"0F");
+        test_writeback_instruction("ADD", "0001", "00", "000");
+        test_writeback_instruction("SUB", "0010", "00", "001");
+        test_writeback_instruction("AND", "0011", "00", "010");
+        test_writeback_instruction("OR",  "0100", "00", "011");
+        test_writeback_instruction("XOR", "0101", "00", "100");
+        test_writeback_instruction("NOT", "0110", "00", "101");
+        test_writeback_instruction("SHL", "0111", "00", "110");
+        test_writeback_instruction("SHR", "1000", "00", "111");
 
 
-        -- =============================================
+        -- =================================================
         -- LDI
-        -- =============================================
+        -- =================================================
 
-        -- Immediate = 42 decimal = 0x2A
-        immediate_data <= x"2A";
+        test_writeback_instruction("LDI", "1001", "01", "000");
 
-        test_instruction(
-            "LDI",
-            "1001",
-            "01",
-            x"2A"
-        );
+
+        -- =================================================
+        -- LOAD
+        -- =================================================
+
+        test_load;
+
+
+        -- =================================================
+        -- STORE
+        -- =================================================
+
+        test_store;
 
 
         report "====================================";
-        report "ALL STEP 3 TESTS COMPLETED";
+        report "ALL STEP 4 TESTS COMPLETED";
         report "====================================";
 
         wait;

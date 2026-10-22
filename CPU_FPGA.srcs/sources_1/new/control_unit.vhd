@@ -47,6 +47,7 @@ architecture rtl of control_unit is
         FETCH_IR,
         DECODE,
         EXECUTE,
+        MEMORY,
         WRITEBACK
     );
 
@@ -151,27 +152,61 @@ begin
                     when "1000" =>       -- SHR
                         alu_op <= "111";
                         next_state <= WRITEBACK;
+                        
                     when "1001" =>  -- LDI
                         next_state <= WRITEBACK;
-            
+                        
+                    when "1010" =>  -- LOAD
+                        next_state <= MEMORY;
+                   
+                    when "1011" =>  -- STORE
+                        next_state <= MEMORY;
                     when others =>
                         next_state <= FETCH_ROM;
             
                 end case;
-    
-            when WRITEBACK =>
-                reg_write_enable <= '1';    -- Écriture Register File
-                pc_enable        <= '1';    -- Incrémentation PC
                 
-                -- Sélectionner la source de la donnée
-                if opcode = "1001" then
-                    -- LDI : écrire la valeur immédiate
-                    reg_write_sel <= "01";
-                else
-                    -- Instructions arithmétiques : résultat ALU
-                    reg_write_sel <= "00";
-                end if;     
-                            
+            when MEMORY =>
+            
+                case opcode is
+            
+                    when "1010" =>  -- LOAD
+            
+                        ram_read_enable <= '1';
+            
+                        next_state <= WRITEBACK;
+            
+                    when "1011" =>  -- STORE
+            
+                        ram_write_enable <= '1';
+            
+                        pc_enable <= '1';
+            
+                        next_state <= FETCH_ROM;
+            
+                    when others =>
+            
+                        next_state <= FETCH_ROM;
+            
+                end case;
+                
+            when WRITEBACK =>
+                reg_write_enable <= '1';
+                pc_enable        <= '1';
+            
+                case opcode is
+            
+                    when "1001" =>  -- LDI
+                        reg_write_sel <= "01";
+            
+                    when "1010" =>  -- LOAD
+                        reg_write_sel <= "10";
+            
+                    when others =>   -- ALU
+                        reg_write_sel <= "00";
+            
+                end case;
+            
                 next_state <= FETCH_ROM;
     
         end case;
