@@ -1,0 +1,1 @@
+python3 Assembler/assembler.py Assembler/program.asm CPU_FPGA.srcs/sources_1/new/program.mem

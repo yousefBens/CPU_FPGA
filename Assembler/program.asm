@@ -1,0 +1,10 @@
+; Test ADD : 10 + 20 = 30
+
+LDI R0, 10
+LDI R1, 20
+
+ADD R0, R1
+
+STORE R0, 0x10
+
+HALT
