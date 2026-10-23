@@ -8,7 +8,11 @@
     "gen_directory": "../../../../../../CPU_FPGA.gen/sources_1/bd/design_1/ip/design_1_program_memory_0_0",
     "parameters": {
       "component_parameters": {
+        "MEM_FILE": [ { "value": "/home/yousef/Vivado_workspace/CPU_FPGA/CPU_FPGA.srcs/sources_1/new/program.mem", "resolve_type": "user", "usage": "all" } ],
         "Component_Name": [ { "value": "design_1_program_memory_0_0", "resolve_type": "user", "usage": "all" } ]
+      },
+      "model_parameters": {
+        "MEM_FILE": [ { "value": "/home/yousef/Vivado_workspace/CPU_FPGA/CPU_FPGA.srcs/sources_1/new/program.mem", "resolve_type": "generated", "usage": "all" } ]
       },
       "project_parameters": {
         "ARCHITECTURE": [ { "value": "artix7" } ],

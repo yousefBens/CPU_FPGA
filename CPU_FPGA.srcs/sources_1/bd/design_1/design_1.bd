@@ -624,8 +624,8 @@
           "register_file_0/Clk",
           "flags_register_0/Clk",
           "data_ram_0/Clk",
-          "program_memory_0/Clk",
-          "ila_0/clk"
+          "ila_0/clk",
+          "program_memory_0/Clk"
         ]
       },
       "alu_0_C": {
@@ -777,8 +777,8 @@
       "program_counter_0_pc_out": {
         "ports": [
           "program_counter_0/pc_out",
-          "program_memory_0/addr",
-          "ila_0/probe0"
+          "ila_0/probe0",
+          "program_memory_0/addr"
         ]
       },
       "program_memory_0_data_out": {
